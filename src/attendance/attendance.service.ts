@@ -1,7 +1,10 @@
-﻿import {
+﻿/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
+import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
@@ -13,6 +16,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AttendanceService {
+  private readonly logger = new Logger(AttendanceService.name);
+
   constructor(
     @InjectRepository(Attendance)
     private attendanceRepository: Repository<Attendance>,
@@ -28,6 +33,9 @@ export class AttendanceService {
     });
 
     if (!employee) {
+      this.logger.warn(
+        `Intento de marcación fallido: Empleado con ID ${createAttendanceDto.employeeId} no encontrado`,
+      );
       throw new NotFoundException(
         `Empleado con ID ${createAttendanceDto.employeeId} no encontrado`,
       );
@@ -67,6 +75,9 @@ export class AttendanceService {
         !salidaPosterior ||
         salidaPosterior.horaRegistro < ultimaEntrada.horaRegistro
       ) {
+        this.logger.warn(
+          `Empleado ID ${createAttendanceDto.employeeId} tiene una entrada sin salida registrada`,
+        );
         throw new BadRequestException(
           `El empleado ya tiene una entrada registrada sin salida`,
         );
@@ -104,6 +115,9 @@ export class AttendanceService {
 
       // Si la tardanza es mayor o igual a 60 minutos, enviar notificación
       if (diferenciaMinutos >= 60) {
+        this.logger.warn(
+          `Tardanza detectada: Empleado ${employee.nombre} ${employee.apellido} llegó ${diferenciaMinutos} minutos tarde`,
+        );
         await this.notificationsService
           .queueLateArrivalNotification({
             employeeId: employee.id,
@@ -116,7 +130,10 @@ export class AttendanceService {
           })
           .catch((error) => {
             // No fallar la marcación si falla la notificación
-            console.error('Error al encolar notificación:', error);
+            this.logger.error(
+              `Error al encolar notificación de tardanza: ${error.message}`,
+              error.stack,
+            );
           });
       }
     }
@@ -131,6 +148,9 @@ export class AttendanceService {
     });
 
     if (!employee) {
+      this.logger.warn(
+        `Intento de marcación de salida fallido: Empleado con ID ${createAttendanceDto.employeeId} no encontrado`,
+      );
       throw new NotFoundException(
         `Empleado con ID ${createAttendanceDto.employeeId} no encontrado`,
       );
@@ -151,6 +171,9 @@ export class AttendanceService {
     });
 
     if (!entradaMismoDia) {
+      this.logger.warn(
+        `No hay entrada registrada para empleado ID ${createAttendanceDto.employeeId} el día ${horaRegistro.toISOString().split('T')[0]}`,
+      );
       throw new BadRequestException(
         'No hay una entrada registrada para marcar salida',
       );
@@ -188,7 +211,9 @@ export class AttendanceService {
       horaRegistro,
     });
 
-    return this.attendanceRepository.save(attendance);
+    const savedAttendance = await this.attendanceRepository.save(attendance);
+
+    return savedAttendance;
   }
 
   async obtenerAsistencias(employeeId: number) {
@@ -197,15 +222,24 @@ export class AttendanceService {
     });
 
     if (!employee) {
+      this.logger.warn(
+        `Consulta de asistencias fallida: Empleado con ID ${employeeId} no encontrado`,
+      );
       throw new NotFoundException(
         `Empleado con ID ${employeeId} no encontrado`,
       );
     }
 
-    return this.attendanceRepository.find({
+    const asistencias = await this.attendanceRepository.find({
       where: { employeeId },
       order: { horaRegistro: 'DESC' },
     });
+
+    this.logger.log(
+      `Se encontraron ${asistencias.length} registros de asistencia para empleado ID ${employeeId}`,
+    );
+
+    return asistencias;
   }
 
   async generarReporte(
@@ -220,12 +254,18 @@ export class AttendanceService {
     });
 
     if (!employee) {
+      this.logger.warn(
+        `Generación de reporte fallida: Empleado con ID ${employeeId} no encontrado`,
+      );
       throw new NotFoundException(
         `Empleado con ID ${employeeId} no encontrado`,
       );
     }
 
     if (!employee.shift) {
+      this.logger.warn(
+        `Generación de reporte fallida: Empleado con ID ${employeeId} no tiene turno asignado`,
+      );
       throw new BadRequestException(
         `El empleado con ID ${employeeId} no tiene un turno asignado`,
       );
@@ -289,7 +329,7 @@ export class AttendanceService {
         ? Math.round((daysAttended / totalDaysExpected) * 100)
         : 0;
 
-    return {
+    const report = {
       employeeId,
       employeeName: `${employee.nombre} ${employee.apellido}`,
       totalDaysExpected,
@@ -303,6 +343,8 @@ export class AttendanceService {
       },
       lateArrivalDetails,
     };
+
+    return report;
   }
 
   private calcularDiasLaborales(startDate: Date, endDate: Date): number {
