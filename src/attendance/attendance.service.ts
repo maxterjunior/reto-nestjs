@@ -271,6 +271,15 @@ export class AttendanceService {
       );
     }
 
+    if (!startDate || !endDate) {
+      this.logger.warn(
+        `Generación de reporte fallida: Fechas de inicio o fin no proporcionadas`,
+      );
+      throw new BadRequestException(
+        'Las fechas de inicio y fin son obligatorias',
+      );
+    }
+
     // Definir rangos completos de los días
     const { inicioDia: inicioRango } = this.obtenerRangoDia(startDate);
     const { finDia: finRango } = this.obtenerRangoDia(endDate);

@@ -6,7 +6,6 @@
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Attendance, Shift } from '../../attendance/entities/attendance.entity';
 
 @Entity('employees')
 export class Employee {
@@ -28,10 +27,10 @@ export class Employee {
   @Column({ nullable: true })
   shiftId: number;
 
-  @OneToMany(() => Attendance, (attendance) => attendance.employee)
-  attendances: Attendance[];
+  @OneToMany('Attendance', 'employee')
+  attendances: any[];
 
-  @ManyToOne(() => Shift, (shift) => shift.employees)
+  @ManyToOne('Shift', 'employees')
   @JoinColumn({ name: 'shiftId' })
-  shift: Shift;
+  shift: any;
 }
