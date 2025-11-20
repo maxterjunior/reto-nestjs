@@ -6,8 +6,8 @@ import { Attendance } from './entities/attendance.entity';
 import { EmployeesModule } from '../employees/employees.module';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Attendance]), EmployeesModule],
-    controllers: [AttendanceController],
-    providers: [AttendanceService],
+  imports: [TypeOrmModule.forFeature([Attendance]), EmployeesModule],
+  controllers: [AttendanceController],
+  providers: [AttendanceService],
 })
-export class AttendanceModule { }
+export class AttendanceModule {}

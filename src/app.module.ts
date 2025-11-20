@@ -27,4 +27,4 @@ import { AttendanceModule } from './attendance/attendance.module';
     AttendanceModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}
