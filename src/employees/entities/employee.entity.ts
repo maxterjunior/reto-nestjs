@@ -22,6 +22,9 @@ export class Employee {
   @Column({ type: 'varchar', length: 20, unique: true })
   numeroDocumento: string;
 
+  @Column({ type: 'varchar', length: 150, unique: true })
+  email: string;
+
   @Column({ nullable: true })
   shiftId: number;
 

@@ -9,6 +9,7 @@ import { Attendance, AttendanceType } from './entities/attendance.entity';
 import { Employee } from '../employees/entities/employee.entity';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { AttendanceReportDto } from './dto/attendance-report.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AttendanceService {
@@ -17,6 +18,7 @@ export class AttendanceService {
     private attendanceRepository: Repository<Attendance>,
     @InjectRepository(Employee)
     private employeeRepository: Repository<Employee>,
+    private notificationsService: NotificationsService,
   ) {}
 
   async marcarEntrada(createAttendanceDto: CreateAttendanceDto) {
@@ -84,7 +86,42 @@ export class AttendanceService {
       horaRegistro,
     });
 
-    return this.attendanceRepository.save(attendance);
+    const savedAttendance = await this.attendanceRepository.save(attendance);
+
+    // Verificar si el empleado tiene un turno y calcular tardanza
+    const employeeWithShift = await this.employeeRepository.findOne({
+      where: { id: createAttendanceDto.employeeId },
+      relations: ['shift'],
+    });
+
+    if (employeeWithShift?.shift) {
+      const horaEntrada = this.extraerHora(horaRegistro);
+      const horaEsperada = employeeWithShift.shift.horaInicio;
+
+      const minutosLlegada = this.convertirHoraAMinutos(horaEntrada);
+      const minutosEsperados = this.convertirHoraAMinutos(horaEsperada);
+      const diferenciaMinutos = minutosLlegada - minutosEsperados;
+
+      // Si la tardanza es mayor o igual a 60 minutos, enviar notificación
+      if (diferenciaMinutos >= 60) {
+        await this.notificationsService
+          .queueLateArrivalNotification({
+            employeeId: employee.id,
+            employeeName: `${employee.nombre} ${employee.apellido}`,
+            scheduledTime: horaEsperada,
+            actualTime: horaEntrada,
+            minutesLate: diferenciaMinutos,
+            date: horaRegistro.toISOString().split('T')[0],
+            email: employee.email,
+          })
+          .catch((error) => {
+            // No fallar la marcación si falla la notificación
+            console.error('Error al encolar notificación:', error);
+          });
+      }
+    }
+
+    return savedAttendance;
   }
 
   async marcarSalida(createAttendanceDto: CreateAttendanceDto) {

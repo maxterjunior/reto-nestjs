@@ -27,6 +27,7 @@ BEGIN
         nombre VARCHAR(100) NOT NULL,
         apellido VARCHAR(100) NOT NULL,
         numeroDocumento VARCHAR(20) NOT NULL UNIQUE,
+        email VARCHAR(150) NOT NULL UNIQUE,
         shiftId INT NULL,
         FOREIGN KEY (shiftId) REFERENCES shifts(id)
     );
@@ -42,12 +43,12 @@ INSERT INTO shifts (nombre, horaInicio, horaFin, toleranciaMinutos) VALUES
 GO
 
 -- Insertar empleados de ejemplo
-INSERT INTO employees (nombre, apellido, numeroDocumento, shiftId) VALUES 
-    ('Juan', 'Pérez', '12345678', 1),
-    ('María', 'García', '87654321', 1),
-    ('Carlos', 'López', '11223344', 2),
-    ('Ana', 'Martínez', '55667788', 2),
-    ('Luis', 'Rodríguez', '99887766', 3);
+INSERT INTO employees (nombre, apellido, numeroDocumento, email, shiftId) VALUES 
+    ('Juan', 'Pérez',  '12345678', 'juan.perez@example.com', 1),
+    ('María', 'García', '87654321', 'maria.garcia@example.com', 1),
+    ('Carlos', 'López', '11223344', 'carlos.lopez@example.com',  2),
+    ('Ana', 'Martínez', '55667788', 'ana.martinez@example.com', 2),
+    ('Luis', 'Rodríguez', '99887766', 'luis.rodriguez@example.com', 3);
 
 GO
 
