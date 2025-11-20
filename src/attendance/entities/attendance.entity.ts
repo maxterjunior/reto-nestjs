@@ -5,6 +5,7 @@
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { Employee } from '../../employees/entities/employee.entity';
 
@@ -40,6 +41,33 @@ export class Attendance {
 
   @Column({ type: 'datetime' })
   horaRegistro: Date;
+
+  @CreateDateColumn()
+  createdAt: Date;
+}
+
+@Entity('shifts')
+export class Shift {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({
+    type: 'varchar',
+    length: 100,
+  })
+  nombre: string;
+
+  @Column({ type: 'time' })
+  horaInicio: string;
+
+  @Column({ type: 'time' })
+  horaFin: string;
+
+  @Column({ type: 'int' })
+  toleranciaMinutos: number;
+
+  @OneToMany(() => Employee, (employee) => employee.shift)
+  employees: Employee[];
 
   @CreateDateColumn()
   createdAt: Date;

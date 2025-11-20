@@ -1,5 +1,12 @@
-﻿import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
-import { Attendance } from '../../attendance/entities/attendance.entity';
+﻿import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { Attendance, Shift } from '../../attendance/entities/attendance.entity';
 
 @Entity('employees')
 export class Employee {
@@ -15,6 +22,13 @@ export class Employee {
   @Column({ type: 'varchar', length: 20, unique: true })
   numeroDocumento: string;
 
+  @Column({ nullable: true })
+  shiftId: number;
+
   @OneToMany(() => Attendance, (attendance) => attendance.employee)
   attendances: Attendance[];
+
+  @ManyToOne(() => Shift, (shift) => shift.employees)
+  @JoinColumn({ name: 'shiftId' })
+  shift: Shift;
 }
